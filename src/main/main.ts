@@ -83,7 +83,7 @@ const createWs = (win: BrowserWindow) => {
       win.webContents.send('terminal-exited', id);
       setTimeout(() => {
         win.webContents.send('message', {
-          pid: null,
+          pid,
           msg: `Process exited with code: ${exitCode}`,
           id,
           cmd,
@@ -95,10 +95,12 @@ const createWs = (win: BrowserWindow) => {
   });
 
   ipcMain.on('kill-terminal', async (e: any, message: any) => {
-    win.webContents.send('test-con', { message: 'heellloo' });
     console.log('terminal kill called');
     console.log(message);
-    await kill(message);
+    kill(message.pid, (err)=> {
+      message.pid = null
+      win.webContents.send('message', message);
+    });
   });
 };
 

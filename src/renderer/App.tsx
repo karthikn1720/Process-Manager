@@ -128,8 +128,8 @@ function Hello() {
       });
     }
   };
-  const handleKill = (pid: number | null) => {
-    window.electron.ipcRenderer.sendMessage('kill-terminal', pid);
+  const handleKill = (m: TerminalMsgs) => {
+    window.electron.ipcRenderer.sendMessage('kill-terminal', m);
   };
 
   const handleAdd = async () => {
@@ -169,7 +169,7 @@ function Hello() {
     }
     if (m.pid) {
       setOpen(true);
-      handleKill(m.pid);
+      handleKill(m);
     }
     await db.terminal.delete(m.id);
   };
@@ -262,7 +262,7 @@ function Hello() {
                     pointerEvents: 'auto',
                   }}
                   disabled={!m.pid}
-                  onClick={() => handleKill(m.pid)}
+                  onClick={() => handleKill(m)}
                 >
                   Kill
                 </Button>
