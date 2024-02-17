@@ -39,6 +39,16 @@ function Hello() {
     cmd: '',
     path: '',
   });
+  const [errors, setErrors] = useState({
+    name: '',
+    cmd: '',
+    path: '',
+  });
+  const [touched, setTouched] = useState({
+    name: false,
+    cmd: false,
+    path: false,
+  });
   const [msgs, setMsgs] = useState<TerminalMsgProp[]>([]);
   const [open, setOpen] = React.useState(false);
 
@@ -74,6 +84,22 @@ function Hello() {
     socketInitializer();
   }, []);
 
+  const validator = (name: string, val: string) => {
+    console.log(name, val);
+    let err = '';
+    if (_.isEmpty(val)) {
+      console.log('yes');
+      err = 'Should not be empty';
+    }
+    setErrors((prev) => {
+      return {
+        ...prev,
+        [name]: err,
+      };
+    });
+    return err;
+  };
+
   const onChangeHandler = (e: any) => {
     setCmdInput((prev) => {
       return {
@@ -81,6 +107,17 @@ function Hello() {
         [e.target.name]: e.target.value,
       };
     });
+    validator(e.target.name, e.target.value);
+  };
+
+  const handleBlur = (e: any) => {
+    setTouched((prev) => {
+      return {
+        ...prev,
+        [e.target.name]: true,
+      };
+    });
+    validator(e.target.name, e.target.value);
   };
 
   const handleExecute = (m: TerminalMsgs) => {
@@ -96,6 +133,16 @@ function Hello() {
   };
 
   const handleAdd = async () => {
+    setTouched({
+      name: true,
+      path: true,
+      cmd: true,
+    });
+    const validatedErrors = _.map(cmdInput, (val, key) => validator(key, val));
+    const isError = _.some(validatedErrors, (a) => !_.isEmpty(a));
+    if (isError) {
+      return;
+    }
     const addTerm = {
       pid: null,
       msg: '',
@@ -105,6 +152,11 @@ function Hello() {
     };
     await db.terminal.put(addTerm);
     setCmdInput({
+      name: '',
+      path: '',
+      cmd: '',
+    });
+    setErrors({
       name: '',
       path: '',
       cmd: '',
@@ -143,7 +195,9 @@ function Hello() {
           variant="outlined"
           value={cmdInput.name}
           onChange={(e) => onChangeHandler(e)}
+          onBlur={handleBlur}
           className="h-12"
+          error={touched.name && !_.isEmpty(errors.name)}
         />
         <TextField
           id="path"
@@ -152,7 +206,9 @@ function Hello() {
           variant="outlined"
           value={cmdInput.path}
           onChange={(e) => onChangeHandler(e)}
+          onBlur={handleBlur}
           className="h-12"
+          error={touched.path && !_.isEmpty(errors.path)}
         />
         <TextField
           id="cmd"
@@ -161,7 +217,9 @@ function Hello() {
           variant="outlined"
           value={cmdInput.cmd}
           onChange={(e) => onChangeHandler(e)}
+          onBlur={handleBlur}
           className="h-12"
+          error={touched.cmd && !_.isEmpty(errors.cmd)}
         />
         <Button onClick={handleAdd} className="h-14">
           Add
