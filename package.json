@@ -164,6 +164,7 @@
     ],
     "afterSign": ".erb/scripts/notarize.js",
     "mac": {
+      "icon": "assets/businessman.png",
       "target": {
         "target": "default",
         "arch": [
@@ -178,6 +179,7 @@
       "gatekeeperAssess": false
     },
     "dmg": {
+      "icon": "assets/businessman.png",
       "contents": [
         {
           "x": 130,
