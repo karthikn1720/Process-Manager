@@ -29,7 +29,7 @@ interface TerminalMsgs {
 
 interface TerminalMsgProp {
   id: number;
-  msg: string;
+  msg: [];
   expanded: boolean;
 }
 
@@ -69,12 +69,24 @@ function Hello() {
         if (!data || !data.id) {
           return;
         }
-        setMsgs([
-          ..._.set(msgs, data?.id, {
-            id: data?.id,
-            msg: (_.get(msgs, data?.id)?.msg || '') + data.msg,
-          }),
-        ]);
+        setMsgs((prev) => {
+          const prevMsg = _.get(prev, data?.id)?.msg || [];
+
+          let updatedMsg = [...prevMsg, data.msg];
+
+          if (updatedMsg.length > 40) {
+            updatedMsg = updatedMsg.slice(
+              updatedMsg.length - 39,
+              updatedMsg.length,
+            );
+          }
+          return [
+            ..._.set(msgs, data?.id, {
+              id: data?.id,
+              msg: updatedMsg,
+            }),
+          ];
+        });
         await db.terminal.update(data.id, {
           pid: data.pid,
           msg: data.msg,
@@ -85,10 +97,8 @@ function Hello() {
   }, []);
 
   const validator = (name: string, val: string) => {
-    console.log(name, val);
     let err = '';
     if (_.isEmpty(val)) {
-      console.log('yes');
       err = 'Should not be empty';
     }
     setErrors((prev) => {

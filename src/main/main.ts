@@ -63,13 +63,13 @@ const createWs = (win: BrowserWindow) => {
       shell: true,
       cwd: path,
     });
-    // child.write(cmd)
+
     childs.push(child);
     child.stderr.on('data', function (data) {
       console.error('STDERR:', data.toString());
     });
+  
     child.stdout.on('data', (data) => {
-      console.log(data.toString());
       win.webContents.send('message', {
         pid: child.pid,
         msg: data.toString(),
