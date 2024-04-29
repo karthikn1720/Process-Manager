@@ -1,3 +1,5 @@
+****NOTE: Browser may block you from downloading the application because it is not signed. You can click 'Download anyway' to download and install it on your computer****
+
 **This is a simple tool to store all your frequently using commands (npm start, dotnet run, etc..)**
 
 To Save your command:
