@@ -54,7 +54,7 @@ const installExtensions = async () => {
 
 const createWs = (win: BrowserWindow) => {
   ipcMain.on('execute-cmd', (e: any, dat: any) => {
-    const { pid, cmd, id, name, path } = dat;
+    const { pid, cmd, id, name, path, disabled } = dat;
 
     if (pid !== null) {
       return;
@@ -66,6 +66,15 @@ const createWs = (win: BrowserWindow) => {
 
     childs.push(child);
     child.stderr.on('data', function (data) {
+      win.webContents.send('message', {
+        pid: child.pid,
+        msg: data.toString(),
+        id,
+        cmd,
+        name,
+        path,
+        disabled
+      });
       console.error('STDERR:', data.toString());
     });
   
@@ -77,6 +86,7 @@ const createWs = (win: BrowserWindow) => {
         cmd,
         name,
         path,
+        disabled
       });
     });
     child.on('exit', (exitCode) => {
@@ -89,6 +99,7 @@ const createWs = (win: BrowserWindow) => {
           cmd,
           name,
           path,
+          disabled: false
         });
       }, 2000);
     });
@@ -98,7 +109,8 @@ const createWs = (win: BrowserWindow) => {
     console.log('terminal kill called');
     console.log(message);
     kill(message.pid, (err)=> {
-      message.pid = null
+      // message.pid = null
+      // message.disabled = false
       win.webContents.send('message', message);
     });
   });

@@ -25,6 +25,7 @@ interface TerminalMsgs {
   id?: IndexableType;
   name: string;
   path: string;
+  disabled: boolean;
 }
 
 interface TerminalMsgProp {
@@ -50,7 +51,7 @@ function Hello() {
     path: false,
   });
   const [msgs, setMsgs] = useState<TerminalMsgProp[]>([]);
-  const [open, setOpen] = React.useState(false);
+  const [alertMsg, setAlertMsg] = React.useState('');
 
   const allItems = useLiveQuery(() => db.terminal?.toArray(), []);
 
@@ -60,6 +61,7 @@ function Hello() {
         if (it.id) {
           db.terminal.update(it.id, {
             pid: null,
+            disabled: false,
           });
         }
       }),
@@ -74,9 +76,9 @@ function Hello() {
 
           let updatedMsg = [...prevMsg, data.msg];
 
-          if (updatedMsg.length > 40) {
+          if (updatedMsg.length > 200) {
             updatedMsg = updatedMsg.slice(
-              updatedMsg.length - 39,
+              updatedMsg.length - 199,
               updatedMsg.length,
             );
           }
@@ -90,6 +92,7 @@ function Hello() {
         await db.terminal.update(data.id, {
           pid: data.pid,
           msg: data.msg,
+          disabled: data.disabled,
         });
       });
     };
@@ -131,12 +134,29 @@ function Hello() {
   };
 
   const handleExecute = (m: TerminalMsgs) => {
-    window.electron.ipcRenderer.sendMessage('execute-cmd', m);
     if (m.id) {
       db.terminal.update(m.id, {
         msg: '',
+        disabled: true,
+      });
+      setMsgs((prev) => {
+        const prevMsg: TerminalMsgProp[] =
+          _.get(prev, m?.id as string)?.msg || [];
+
+        let updatedMsg = prevMsg.length ? [...prevMsg, '\n\n'] : prevMsg;
+        return [
+          ..._.set(msgs, m?.id as string, {
+            id: m?.id,
+            msg: updatedMsg,
+          }),
+        ];
       });
     }
+
+    m.disabled = true;
+    console.log(m);
+
+    window.electron.ipcRenderer.sendMessage('execute-cmd', m);
   };
   const handleKill = (m: TerminalMsgs) => {
     window.electron.ipcRenderer.sendMessage('kill-terminal', m);
@@ -151,6 +171,7 @@ function Hello() {
     const validatedErrors = _.map(cmdInput, (val, key) => validator(key, val));
     const isError = _.some(validatedErrors, (a) => !_.isEmpty(a));
     if (isError) {
+      setAlertMsg('Fill all the fields');
       return;
     }
     const addTerm = {
@@ -159,6 +180,7 @@ function Hello() {
       cmd: cmdInput.cmd,
       name: cmdInput.name,
       path: cmdInput.path,
+      disabled: false,
     };
     await db.terminal.put(addTerm);
     setCmdInput({
@@ -178,7 +200,7 @@ function Hello() {
       return;
     }
     if (m.pid) {
-      setOpen(true);
+      setAlertMsg('Process will be terminated');
       handleKill(m);
     }
     await db.terminal.delete(m.id);
@@ -192,7 +214,7 @@ function Hello() {
       return;
     }
 
-    setOpen(false);
+    setAlertMsg('');
   };
 
   return (
@@ -207,7 +229,7 @@ function Hello() {
           onChange={(e) => onChangeHandler(e)}
           onBlur={handleBlur}
           className="h-12"
-          error={touched.name && !_.isEmpty(errors.name)}
+          // error={touched.name && !_.isEmpty(errors.name)}
         />
         <TextField
           id="path"
@@ -218,7 +240,7 @@ function Hello() {
           onChange={(e) => onChangeHandler(e)}
           onBlur={handleBlur}
           className="h-12"
-          error={touched.path && !_.isEmpty(errors.path)}
+          // error={touched.path && !_.isEmpty(errors.path)}
         />
         <TextField
           id="cmd"
@@ -229,7 +251,7 @@ function Hello() {
           onChange={(e) => onChangeHandler(e)}
           onBlur={handleBlur}
           className="h-12"
-          error={touched.cmd && !_.isEmpty(errors.cmd)}
+          // error={touched.cmd && !_.isEmpty(errors.cmd)}
         />
         <Button onClick={handleAdd} className="h-14">
           Add
@@ -262,7 +284,7 @@ function Hello() {
                   sx={{
                     pointerEvents: 'auto',
                   }}
-                  disabled={!!m.pid}
+                  disabled={m.disabled}
                   onClick={() => handleExecute(m)}
                 >
                   Run
@@ -271,7 +293,7 @@ function Hello() {
                   sx={{
                     pointerEvents: 'auto',
                   }}
-                  disabled={!m.pid}
+                  disabled={!m.disabled}
                   onClick={() => handleKill(m)}
                 >
                   Kill
@@ -286,14 +308,9 @@ function Hello() {
           </Accordion>
         );
       })}
-      <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
-        <Alert
-          onClose={handleClose}
-          severity="warning"
-          // variant="filled"
-          sx={{ width: '100%' }}
-        >
-          Process will be terminated
+      <Snackbar open={!!alertMsg} autoHideDuration={6000} onClose={handleClose}>
+        <Alert onClose={handleClose} severity="warning" sx={{ width: '100%' }}>
+          {alertMsg}
         </Alert>
       </Snackbar>
     </div>

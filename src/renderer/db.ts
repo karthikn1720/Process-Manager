@@ -9,6 +9,7 @@ interface Terminal {
     id?: IndexableType;
     name: string;
     path: string;
+    disabled: boolean;
   }
 
 export class MySubClassedDexie extends Dexie {
@@ -19,7 +20,7 @@ export class MySubClassedDexie extends Dexie {
     constructor() {
       super('myDatabase');
       this.version(1).stores({
-        terminal: '++id, cmd, pid, msg, name, path' // Primary key and indexed props
+        terminal: '++id, cmd, pid, msg, name, path, disabled' // Primary key and indexed props
       });
     }
   }
